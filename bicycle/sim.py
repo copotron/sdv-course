@@ -25,8 +25,8 @@ def main():
         return surf
 
     robot = Robot()
-    robot.x = 150
-    robot.y = 150
+    robot.x = 170
+    robot.y = 70
     robot.v = 30
     robot.delta = 0.02
 

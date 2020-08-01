@@ -3,38 +3,32 @@ import numpy as np
 
 class Road:
     def __init__(self):
-        self.way_points=[]
-        rr, cc, val = skimage.draw.line_aa(100, 100, 300, 100)
-        self.way_points.append((rr, cc))
-        rr, cc, val = skimage.draw.line_aa(300, 100, 300, 300)
-        self.way_points.append((rr, cc)) # todo marge the waypoints rr, cc into 2 values instead of 4        
+        
+        rr1, cc1, val = skimage.draw.line_aa(100, 100, 300, 100)        
+        rr2, cc2, val = skimage.draw.line_aa(300, 100, 300, 300)
+        rr = np.append(rr1, rr2)
+        cc = np.append(cc1, cc2)
+        self.way_points=[rr, cc]
 
     def draw(self, image, robot):
         min_points = []
         min_dist = []
-        for wp in self.way_points:
-            rr, cc = wp
-            image[rr, cc] = 200
-            dx = [abs(robot.x-r) for r in rr]
-            dy = [abs(robot.y-c) for c in cc]
-            d = np.hypot(dx, dy)
-            midx = np.argmin(d)
-            min_points.append([rr[midx], cc[midx]])
-            min_dist.append(d[midx])
-        
-        #print(min_points)
-        #for mp in min_points:
-        #    print(mp, "--", mp[1], mp[2])
-        #    rr, cc, val = skimage.draw.line_aa(int(robot.x), int(robot.y), mp[1], mp[2])
-        #    image[rr, cc] = 255
+        wrr, wcc = self.way_points
+        image[wrr, wcc] = 200
+        dx = [abs(robot.x-r) for r in wrr]
+        dy = [abs(robot.y-c) for c in wcc]
+        d = np.hypot(dx, dy)
+        midx = np.argmin(d)
+        min_points = [wrr[midx], wcc[midx]]
 
-        mdi = np.argmin(min_dist)
-        print(mdi)
-        mp = min_points[mdi]
+        idx = midx
+        if idx < len(self.way_points[0]) - 15:
+            idx += 12
 
-        rr, cc, val = skimage.draw.line_aa(int(robot.x), int(robot.y), mp[0], mp[1])
+        rr, cc, val = skimage.draw.line_aa(int(robot.x), int(robot.y), min_points[0], min_points[1])
         image[rr, cc] = 50
 
-
-
+        rr, cc, val = skimage.draw.line_aa(int(robot.x), int(robot.y), wrr[idx], wcc[idx])
+        image[rr, cc] = 100
+        
                     
