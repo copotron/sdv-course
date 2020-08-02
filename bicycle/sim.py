@@ -4,6 +4,7 @@ import numpy as np
 
 from robot import Robot
 from road import Road
+from purepursuit import PurePursuit
 
 def main():    
     pygame.init()
@@ -25,12 +26,15 @@ def main():
         return surf
 
     robot = Robot()
-    robot.x = 170
-    robot.y = 70
+    robot.x = 110
+    robot.y = 90
     robot.v = 30
-    robot.delta = 0.02
+    robot.delta = 0.0
 
     road = Road()
+
+    controller = PurePursuit()
+
 
     t = 0
     dt = 0.1
@@ -44,6 +48,8 @@ def main():
         surf = get_image(t, robot, road)
         display.blit(surf, (0, 0))
         pygame.display.flip()
+        
+        controller.apply_control(robot, road)
         time.sleep(0.033)
         t+=1
 
