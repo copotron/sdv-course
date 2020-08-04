@@ -2,6 +2,16 @@ import carla
 import time
 import pygame
 import numpy as np
+import math
+
+k = 0.1  # look forward gain
+Lfc = 2.0  # [m] look-ahead distance
+Kp = 1.0  # speed proportional gain
+dt = 0.1  # [s] time tick
+#WB = 2.9  # [m] wheel base of vehicle
+WB_Model3 = 2.875
+WB = WB_Model3
+conv_rad_to_steer  = 180.0 / 70.0 / np.pi
 
 client = carla.Client('localhost', 2000)
 #print(client.get_available_maps())
@@ -82,19 +92,57 @@ while t<50:
 
 for wp in path:
     world.debug.draw_string(wp.transform.location, "X", life_time=20000, persistent_lines=True)
-
+    print("["+str(wp.transform.location.x) +", "+ str(wp.transform.location.y) + "]," )
+CPS = 10
 t=0
-while t < 60:
+while t < 70 * CPS:
     world.debug.draw_string(transform.location + carla.Location(x=5), 
         str(t), life_time=1, persistent_lines=True)
-    if t == 22:
+    """
+    if t == 22 * CPS:
         control.steer = -0.3
         vehicle.apply_control(control)
-    if t == 27:
+    if t == 26.7 * CPS:
         control.steer = 0
         vehicle.apply_control(control)
+    if t == 35 * CPS:
+        control.throtthe = 0
+        control.brake = 1.0
+        vehicle.apply_control(control)
+    """
 
-    time.sleep(1)
+    # pure pursuit controller
+    vtransform = vehicle.get_transform()    
+    cp = vehicle.get_location()
+    dx = [abs(cp.x - w.transform.location.x) for w in path]
+    dy = [abs(cp.y - w.transform.location.y) for w in path]
+
+    d = np.hypot(dx, dy)
+    ind = np.argmin(d)
+
+    if ind < len(path)-5:
+        ind = ind + 5
+
+    world.debug.draw_string(cp, "*", life_time=0.3, persistent_lines=True)
+    world.debug.draw_string(path[ind].transform.location, "O", life_time=0.3, 
+        persistent_lines=True)
+
+    tx, ty = path[ind].transform.location.x, path[ind].transform.location.y    
+
+    yaw = np.pi - abs( np.radians(vtransform.rotation.yaw))
+    alphad = math.atan2(ty-cp.y, tx-cp.x) - yaw
+    alpha=np.radians(alphad)
+    Lf = np.hypot(tx-cp.x, ty-cp.y)
+    ld = Lf
+    delta = math.atan2(2.0 * WB * math.sin(alpha) / ld, 1.0)
+    #print("tx ty x y",tx, ty, cp.x, cp.y,  " yaw ", vtransform.rotation.yaw, "alpha ", alpha, " delta ", delta)
+    print(" yaw ", yaw, "alpha ", alpha, " delta ", delta)
+
+    control.steer = -delta * conv_rad_to_steer
+    vehicle.apply_control(control)
+
+
+    time.sleep(1.0/CPS)
     t=t+1
 
 camera.destroy()
